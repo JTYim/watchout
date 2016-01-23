@@ -33,17 +33,19 @@ function update(zz){
 		.attr("class", "bad1")
 		.enter().append("ellipse") 					
 		.attr({ rx:15, ry:8, fill:"#330" })
-		.attr("cx", function(d,i){ return 0.9*Math.floor(Math.random()*width); })
-		.attr("cy", function(d,i){ return 0.9*Math.floor(Math.random()*height); })
+		.attr("cx", 50)
+		.attr("cy", 50)
 
-
-
-
-
-// transitions
-
+	// enemies.attr("x", function(d, i) { return 100; })
+	// debugger;
+	// enemies.exit().remove();
 }
 update(badGuys);
+setInterval(function() {
+	update(d3.selectAll("ellipse").transition()
+		.attr("cx", function(d,i){ return 0.9*Math.floor(Math.random()*width); })
+		.attr("cy", function(d,i){ return 0.9*Math.floor(Math.random()*height); }))
+}, 1000);
 
 
 
