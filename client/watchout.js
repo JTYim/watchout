@@ -1,84 +1,105 @@
-// var BadGuys = function(){
-// 	this.name = name,
-// 	this.x = left,
-// 	this.y = top
-// };
-// BadGuys.prototype.move(){ }
-// var badGuys = new Array(30).map(function(e,i){ 
-// 	return { name: i } 
-// });
+// Board
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .style("background-color", "black")
+    .append("g")  
+
+// Player
+  var goodGuy=[{ 
+    name: 0, 
+    x: width*0.75, 
+    y: height*0.75 
+  }];
+  var me = svg.selectAll("circle")
+    .data(goodGuy)
+  me.enter().append("circle")
+    .attr({r:20, fill:"#350"})
+    .attr('cx', function(d) { return d.x; })
+    .attr('cy', function(d) { return d.y; })
+    .attr("class","good")
+    // me.exit().remove();
+
+// Enemies
+  var badGuys = [d3.range(10)];
+  var enemies;
+    enemies = svg.selectAll("ellipse")
+      .data(d3.range(10))         
+    enemies.enter().append("ellipse") 
+      .attr({ rx:15, ry:8, fill:"red" })
+      .attr("cx", 50)
+      .attr("cy", 50)
+      .attr("class", "bad1")
+    // enemies.exit().remove();
 
 
-// IIFE: Wrap entire thing? 
-// (function(){  })
+// Movement
+  var moveGoodGuy = d3.behavior.drag().on('drag', function(){ 
+    me.attr('cx', d3.event.x);
+    me.attr('cy', d3.event.y);
+  })
+  me.call(moveGoodGuy)  
 
-	var width = 1920;
-	var height = 1080;
-	var svg = d3.select("body").append("svg")
-		.attr("width", width)
-		.attr("height", height)
-		.style("background-color", "black")
-		// .append("g")
-		// .attr("transform", "translate(" + 960 + "," + 500 + ")" );
+  var speed=3000;
+  d3.select(".difficulty").on("input", function() {
+    speed = 3000 - this.value;
+    if(this.value >= 1300){
+      enemies.attr({rx:35})
+      moveBadGuys();
+    }
+  });
 
-	var goodGuy=[{ 
-		name: 0, 
-		x: (width*0.66), 
-		y:(height*0.66), 
-	}];
+  var moveBadGuys = function() {
+    enemies.transition().duration(speed)
+      .attr("cx", function(d){ return 0.9*Math.floor(Math.random()*width); })
+      .attr("cy", function(d){ return 0.9*Math.floor(Math.random()*height); })
+      .each('end', function(){
+        moveBadGuys();
+      })
+  };
+  moveBadGuys();
 
-	var badGuys = [1,2,3,4,5,6,7,8,9,10];
-	// for(var i=1; i<=10; i++){
-	// 	badGuysObj ={ name: "name", info: "info" } 
-	// 	badGuys.push(badGuysObj)
-	// }	
+// ScoreBoard
+  var score=0, highScore=0, collisionCount=0;
+  var updateScore = function(){
+    d3.select( '.scoreboard .current span' ).text( score );
+    d3.select( '.scoreboard .highscore span' ).text( highScore );
+    d3.select( '.scoreboard .collisions span' ).text( collisionCount );
+  };
+  var scoreTicker = function(){
+    score = score+1;
+    highScore = Math.max( score, highScore );
+    updateScore();
+  };
+  setInterval(scoreTicker, 100);
 
-function update(zz, yy){
+  var prevCollision = false;
+  var detectCollisions = function(){
+    var collision = false;
+    
+    enemies.each(function(){
+      var cx =  d3.select(this).attr("cx") + d3.select(this).attr("rx")*2;
+      var cy =  d3.select(this).attr("cy") + d3.select(this).attr("ry")*2;
+      var x = cx - me.x;
+      var y = cy - me.y;
+      if( Math.sqrt(x*x + y*y) < 15 ){
+        collision = true;
+      }
+    });
 
-	var enemies = svg.selectAll("ellipse")
-		.data(zz) 				
-	var me = svg.selectAll("circle")
-		.data(yy)
+    if(collision){
+      score = 0;
+      if( prevCollision != collision ){
+        collisionCount = collisionCount+1;
+      }
+    }
 
-	enemies.enter().append("ellipse") 
-		.attr({ rx:15, ry:8, fill:"red" })
-		.attr("cx", 50)
-		.attr("cy", 50)
-		.attr("class", "bad1")
-	me.enter().append("circle")
-		.attr({r:20, fill:"#350"})
-		.attr('cx', function(d) { return d.x; })
-		.attr('cy', function(d) { return d.y; })
-		.attr("class","good")
-
-	var move = d3.behavior.drag().on('drag', function(){ 
-           	me.attr('cx', d3.event.x);
-		me.attr('cy', d3.event.y);
-	})
-	me.call(move)
-	debugger; 			
-	enemies.exit().remove();
-	enemies.exit().remove();
-}
-
-update(badGuys, goodGuy);
-setInterval(function() {
-	update(d3.selectAll("ellipse").transition().delay(50).duration(1000)
-		.attr("cx", function(d){ return 0.9*Math.floor(Math.random()*width); })
-		.attr("cy", function(d){ return 0.9*Math.floor(Math.random()*height); }))
-}, 1000);
-
-function collide(player, enemy){
-	debugger;
-	var distance = Math.sqrt( Math.pow(( player.attr("cx") - enemy.attr("cx"), 2) + Math.pow((player.cy-enemy.cy),2)) );	 
-	distance < 50 && (console.log("collision"));
-};
-
-setTimeout(function(){
-	svg.selectAll('ellipse').forEach(function(enemy){
-		collide(svg.selectAll('circle'), enemy);
-	})
-},500)
+    prevCollision = collision;
+  };
+  d3.timer(detectCollisions);
+  
 
 
 
